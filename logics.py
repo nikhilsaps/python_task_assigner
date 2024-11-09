@@ -34,7 +34,7 @@ def rma_prep(rmafile):
     rma_dataframe= rma_dataframe.loc[rma_dataframe['status']!='A']
     rma_dataframe= rma_dataframe.loc[rma_dataframe['status']!='F']
     prepd_rma_countr = len(rma_dataframe)
-    rma_dataframe.to_csv("./prepd/prepared_rma.csv")
+    rma_dataframe.to_csv("./prepd/prepared_rma.csv",index=False)
     return f"{original_countr}:{remove_dup_countr}:{prepd_rma_countr}" 
 
 
@@ -63,7 +63,7 @@ def cap_assign(logins):
     cols = ['login'] + [col for col in assigned_df.columns if col != 'login']
     assigned_df = assigned_df[cols]
     assigned_df.to_csv('./assigned/assigned_CAP_tasks.csv', index=False)
-    return f"{len(investigators)}"
+    return f"{len(investigators)}|{[f"{x}  :  {len(assigned_df.loc[assigned_df['login']==x])}  :  {round(len(assigned_df.loc[assigned_df['login']==x])/23,2)} hours" for x in logins.split(",")]}"
 
 
 def rma_assign(logins):  
@@ -91,7 +91,7 @@ def rma_assign(logins):
     cols = ['login'] + [col for col in assigned_df.columns if col != 'login']
     assigned_df = assigned_df[cols]
     assigned_df.to_csv('./assigned/assigned_RMA_tasks.csv', index=False)
-    return f"{len(investigators)}"
+    return f"{len(investigators)}|{[f"{x}  :  {len(assigned_df.loc[assigned_df['login']==x])}  :  {round(len(assigned_df.loc[assigned_df['login']==x])/23,2)} hours" for x in logins.split(",")]}"
 
 
 # def rma_assign():  
