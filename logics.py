@@ -71,48 +71,40 @@ def rma_assign(logins):
     print(logins)
     investigators = pd.DataFrame([x for x in logins.split(",")], columns=["login"])
     grouped_tasks = tasks.groupby('annos')['order_id'].apply(list).reset_index()
+    
+    # Initialize workload dictionary
+    investigator_workload = {login: {'order_count': 0, 'annos': 0, 'total_work': 0} for login in investigators['login']}
+    
     assigned_tasks = []
-    investigator_workload = {login: {'order_count': 0, 'annos': 0} for login in investigators['login']}
+    
+    # Loop through each group of tasks
     for _, group in grouped_tasks.iterrows():
         annos = group['annos']
         order_ids = group['order_id']
+        
         for order_id in order_ids:
+            # Calculate the total workload (combined metric)
+            for login in investigator_workload:
+                investigator_workload[login]['total_work'] = (
+                    investigator_workload[login]['order_count'] + 0.5 * investigator_workload[login]['annos']
+                )
+            
+            # Find the least-loaded investigator based on total_work
             least_loaded_investigator = min(investigator_workload.items(), 
-                                             key=lambda x: (x[1]['order_count'], x[1]['annos']))
-            login = least_loaded_investigator[0]
+                                             key=lambda x: x[1]['total_work'])[0]
+            
+            # Get task details
             task_row = tasks[tasks['order_id'] == order_id].iloc[0]
-            assigned_tasks.append({
-                **task_row.to_dict(), 
-                'login': login          
-            })
-            investigator_workload[login]['order_count'] += 1
-            investigator_workload[login]['annos'] += 1
+            assigned_tasks.append({**task_row.to_dict(), 'login': least_loaded_investigator})
+            
+            # Update investigator workload
+            investigator_workload[least_loaded_investigator]['order_count'] += 1
+            investigator_workload[least_loaded_investigator]['annos'] += 1
+    
     assigned_df = pd.DataFrame(assigned_tasks)
     cols = ['login'] + [col for col in assigned_df.columns if col != 'login']
     assigned_df = assigned_df[cols]
     assigned_df.to_csv('./assigned/assigned_RMA_tasks.csv', index=False)
-    return f"{len(investigators)}|{[f"{x}  :  {len(assigned_df.loc[assigned_df['login']==x])}  :  {round(len(assigned_df.loc[assigned_df['login']==x])/23,2)} hours" for x in logins.split(",")]}"
+    
+    return f"{len(investigators)}|{[f'{x}  :  {len(assigned_df.loc[assigned_df["login"]==x])}  :  {round(len(assigned_df.loc[assigned_df['login']==x])/23,2)} hours' for x in logins.split(',')]}"
 
-
-# def rma_assign():  
-#     tasks = pd.read_csv('prepd/prepared_rma.csv') 
-#     investigators = pd.read_csv('login.csv') 
-#     grouped_tasks = tasks.groupby('annos')['order_id'].apply(list).reset_index()
-#     assigned_tasks = []
-#     investigator_workload = {login: {'order_count': 0, 'annos': 0} for login in investigators['login']}
-#     for _, group in grouped_tasks.iterrows():
-#         annos = group['annos']
-#         order_ids = group['order_id'] 
-#         for order_id in order_ids:
-#             least_loaded_investigator = min(investigator_workload.items(), 
-#                                          key=lambda x: (x[1]['order_count'], x[1]['annos']))
-#             login = least_loaded_investigator[0]
-#             assigned_tasks.append({
-#                 'order_id': order_id,
-#                 'annos': annos,
-#                 'login': login
-#             })
-#             investigator_workload[login]['order_count'] += 1
-#             investigator_workload[login]['annos'] += 1
-#     assigned_df = pd.DataFrame(assigned_tasks)
-#     assigned_df.to_csv('./assigned/assigned_RMA_tasks.csv', index=False)
