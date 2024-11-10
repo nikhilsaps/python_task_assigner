@@ -84,9 +84,11 @@ def cap_assign(agent_list):
     for agent in agent_list:
         anno_assigned = set(anno_per_agent[agent])
         df.loc[df['login'] == agent, 'Assigned MOTT'] = ", ".join(anno_assigned)
+    columns = ['login'] + [col for col in df.columns if col != 'login']
+    df = df[columns]
     
     # Save the updated dataframe to a new CSV or return it
-    df.to_csv('./assigned/assigned_CAP_tasks.csv', index=False)
+    df.to_excel('./assigned/assigned_CAP_tasks.xlsx', index=False)
     
     return f"{len(agent_list)}|{[f"{x}  :  {len(df.loc[df['login']==x])}  :  {round(len(df.loc[df['login']==x])/23,2)} hours" for x in agent_list]}"
 
@@ -132,8 +134,9 @@ def rma_assign(agent_list):
     for agent in agent_list:
         anno_assigned = set(anno_per_agent[agent])
         df.loc[df['login'] == agent, 'Assigned Annos'] = ", ".join(anno_assigned)
-    
+    columns = ['login'] + [col for col in df.columns if col != 'login']
+    df = df[columns]
     # Save the updated dataframe to a new CSV or return it
-    df.to_csv('./assigned/assigned_RMA_tasks.csv', index=False)
+    df.to_excel('./assigned/assigned_RMA_tasks.xlsx', index=False)
     
     return f"{len(agent_list)}|{[f"{x}  :  {len(df.loc[df['login']==x])}  :  {round(len(df.loc[df['login']==x])/23,2)} hours" for x in agent_list]}"
