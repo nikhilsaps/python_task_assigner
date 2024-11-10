@@ -1,5 +1,7 @@
 import pandas as pd
+import numpy as np
 import os
+from collections import Counter
 
 
 def clear_prepd():
@@ -22,6 +24,7 @@ def cap_prep(capfile):
     cap_dataframe.drop_duplicates(subset=['customer_id','MOTT'],keep='first',inplace=True)
     remove_dup_count =len(cap_dataframe)
     cap_dataframe= cap_dataframe.loc[cap_dataframe["conceded_order_id"].isna()]
+    cap_dataframe = cap_dataframe.dropna(subset=['customer_id', 'order_id', 'MOTT'], how='all')
     prepd_cap_count= len(cap_dataframe)
     cap_dataframe.to_csv("./prepd/prepared_cap.csv",index=False)
     return f"{original_count}:{remove_dup_count}:{prepd_cap_count}"
@@ -33,78 +36,104 @@ def rma_prep(rmafile):
     remove_dup_countr =len(rma_dataframe)
     rma_dataframe= rma_dataframe.loc[rma_dataframe['status']!='A']
     rma_dataframe= rma_dataframe.loc[rma_dataframe['status']!='F']
+    rma_dataframe = rma_dataframe.dropna(subset=['customer_id', 'order_id', 'annos'], how='all')
     prepd_rma_countr = len(rma_dataframe)
     rma_dataframe.to_csv("./prepd/prepared_rma.csv",index=False)
     return f"{original_countr}:{remove_dup_countr}:{prepd_rma_countr}" 
 
+import pandas as pd
 
-def cap_assign(logins):  
-    tasks = pd.read_csv('prepd/prepared_cap.csv') 
-    print(logins)
-    investigators = pd.DataFrame([x for x in logins.split(",")], columns=["login"])
-    grouped_tasks = tasks.groupby('MOTT')['order_id'].apply(list).reset_index()
-    assigned_tasks = []
-    investigator_workload = {login: {'order_count': 0, 'mott_count': 0} for login in investigators['login']}
-    for _, group in grouped_tasks.iterrows():
-        mott = group['MOTT']
-        order_ids = group['order_id']
-        for order_id in order_ids:
-            least_loaded_investigator = min(investigator_workload.items(), 
-                                             key=lambda x: (x[1]['order_count'], x[1]['mott_count']))
-            login = least_loaded_investigator[0]
-            task_row = tasks[tasks['order_id'] == order_id].iloc[0]
-            assigned_tasks.append({
-                **task_row.to_dict(), 
-                'login': login          
-            })
-            investigator_workload[login]['order_count'] += 1
-            investigator_workload[login]['mott_count'] += 1
-    assigned_df = pd.DataFrame(assigned_tasks)
-    cols = ['login'] + [col for col in assigned_df.columns if col != 'login']
-    assigned_df = assigned_df[cols]
-    assigned_df.to_csv('./assigned/assigned_CAP_tasks.csv', index=False)
-    return f"{len(investigators)}|{[f"{x}  :  {len(assigned_df.loc[assigned_df['login']==x])}  :  {round(len(assigned_df.loc[assigned_df['login']==x])/23,2)} hours" for x in logins.split(",")]}"
+def cap_assign(agent_list):
+    # Read the CSV file
+    df = pd.read_csv('prepd/prepared_cap.csv')
+    
+    # Initialize columns for agents and unique annos tracking
+    df['login'] = np.nan
+    
+    # Get the total number of tasks and agents
+    num_tasks = len(df)
+    num_agents = len(agent_list)
+    
+    # Calculate the maximum and minimum number of tasks each agent can receive
+    tasks_per_agent = num_tasks // num_agents
+    remainder = num_tasks % num_agents
+    
+    # Create a list of agents with nearly equal task distribution
+    agent_task_list = agent_list * tasks_per_agent
+    agent_task_list += agent_list[:remainder]
+    
+    # Shuffle the agent list for random distribution (optional)
+    np.random.shuffle(agent_task_list)
+    
+    # Add the tasks to each agent
+    df['login'] = agent_task_list
+
+    # Now distribute the 'annos' values equally
+    # Group by 'annos' to count how many unique annos each agent is assigned
+    anno_counts = Counter(df['MOTT'])
+    anno_per_agent = {agent: [] for agent in agent_list}
+
+    # Distribute unique annos to agents while trying to balance the unique count
+    sorted_annos = sorted(anno_counts.items(), key=lambda x: x[1], reverse=True)
+    for anno, count in sorted_annos:
+        # Find the agent with the least unique annos and assign this anno to them
+        agent_with_fewest = min(anno_per_agent, key=lambda agent: len(set(anno_per_agent[agent])))
+        anno_per_agent[agent_with_fewest].append(anno)
+
+    # Update the dataframe with the unique annos for each agent
+    for agent in agent_list:
+        anno_assigned = set(anno_per_agent[agent])
+        df.loc[df['login'] == agent, 'Assigned MOTT'] = ", ".join(anno_assigned)
+    
+    # Save the updated dataframe to a new CSV or return it
+    df.to_csv('./assigned/assigned_CAP_tasks.csv', index=False)
+    
+    return f"{len(agent_list)}|{[f"{x}  :  {len(df.loc[df['login']==x])}  :  {round(len(df.loc[df['login']==x])/23,2)} hours" for x in agent_list]}"
 
 
-def rma_assign(logins):  
-    tasks = pd.read_csv('prepd/prepared_rma.csv') 
-    print(logins)
-    investigators = pd.DataFrame([x for x in logins.split(",")], columns=["login"])
-    grouped_tasks = tasks.groupby('annos')['order_id'].apply(list).reset_index()
+def rma_assign(agent_list):
+    # Read the CSV file
+    df = pd.read_csv('prepd/prepared_rma.csv')
     
-    # Initialize workload dictionary
-    investigator_workload = {login: {'order_count': 0, 'annos': 0, 'total_work': 0} for login in investigators['login']}
+    # Initialize columns for agents and unique annos tracking
+    df['login'] = np.nan
     
-    assigned_tasks = []
+    # Get the total number of tasks and agents
+    num_tasks = len(df)
+    num_agents = len(agent_list)
     
-    # Loop through each group of tasks
-    for _, group in grouped_tasks.iterrows():
-        annos = group['annos']
-        order_ids = group['order_id']
-        
-        for order_id in order_ids:
-            # Calculate the total workload (combined metric)
-            for login in investigator_workload:
-                investigator_workload[login]['total_work'] = (
-                    investigator_workload[login]['order_count'] + 0.5 * investigator_workload[login]['annos']
-                )
-            
-            # Find the least-loaded investigator based on total_work
-            least_loaded_investigator = min(investigator_workload.items(), 
-                                             key=lambda x: x[1]['total_work'])[0]
-            
-            # Get task details
-            task_row = tasks[tasks['order_id'] == order_id].iloc[0]
-            assigned_tasks.append({**task_row.to_dict(), 'login': least_loaded_investigator})
-            
-            # Update investigator workload
-            investigator_workload[least_loaded_investigator]['order_count'] += 1
-            investigator_workload[least_loaded_investigator]['annos'] += 1
+    # Calculate the maximum and minimum number of tasks each agent can receive
+    tasks_per_agent = num_tasks // num_agents
+    remainder = num_tasks % num_agents
     
-    assigned_df = pd.DataFrame(assigned_tasks)
-    cols = ['login'] + [col for col in assigned_df.columns if col != 'login']
-    assigned_df = assigned_df[cols]
-    assigned_df.to_csv('./assigned/assigned_RMA_tasks.csv', index=False)
+    # Create a list of agents with nearly equal task distribution
+    agent_task_list = agent_list * tasks_per_agent
+    agent_task_list += agent_list[:remainder]
     
-    return f"{len(investigators)}|{[f'{x}  :  {len(assigned_df.loc[assigned_df["login"]==x])}  :  {round(len(assigned_df.loc[assigned_df['login']==x])/23,2)} hours' for x in logins.split(',')]}"
+    # Shuffle the agent list for random distribution (optional)
+    np.random.shuffle(agent_task_list)
+    
+    # Add the tasks to each agent
+    df['login'] = agent_task_list
 
+    # Now distribute the 'annos' values equally
+    # Group by 'annos' to count how many unique annos each agent is assigned
+    anno_counts = Counter(df['annos'])
+    anno_per_agent = {agent: [] for agent in agent_list}
+
+    # Distribute unique annos to agents while trying to balance the unique count
+    sorted_annos = sorted(anno_counts.items(), key=lambda x: x[1], reverse=True)
+    for anno, count in sorted_annos:
+        # Find the agent with the least unique annos and assign this anno to them
+        agent_with_fewest = min(anno_per_agent, key=lambda agent: len(set(anno_per_agent[agent])))
+        anno_per_agent[agent_with_fewest].append(anno)
+
+    # Update the dataframe with the unique annos for each agent
+    for agent in agent_list:
+        anno_assigned = set(anno_per_agent[agent])
+        df.loc[df['login'] == agent, 'Assigned Annos'] = ", ".join(anno_assigned)
+    
+    # Save the updated dataframe to a new CSV or return it
+    df.to_csv('./assigned/assigned_RMA_tasks.csv', index=False)
+    
+    return f"{len(agent_list)}|{[f"{x}  :  {len(df.loc[df['login']==x])}  :  {round(len(df.loc[df['login']==x])/23,2)} hours" for x in agent_list]}"

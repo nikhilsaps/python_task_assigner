@@ -48,25 +48,29 @@ class Widget(QWidget):
         cap_logins, ok = QInputDialog.getText(self, "Input Dialog", "Enter the logins:")
         if ok and cap_logins:
             print(f"User entered: {cap_logins}")
-            text= logics.cap_assign(cap_logins)
+            investc= [x for x in cap_logins.split(",")]
+            text= logics.cap_assign(investc)
             formattedtext = text.split("|")
             parsed_list = ast.literal_eval(formattedtext[1])
             formatted_second_part = "\n".join(parsed_list)
             print(text)
             self.ui.cap_assign_csv.setText(f"Total Login = {formattedtext[0]} \n Login  :  Case Count  : Hours assigned \n {formatted_second_part} ")
+            # self.ui.cap_assign_csv.setText(text)
         else:
             print("User cancelled or didn't enter text.")
 
     def assign_rma_logins(self):
         rma_logins, ok = QInputDialog.getText(self, "Input Dialog", "Enter the logins:")
+        investr = [x for x in rma_logins.split(",")]
         if ok and rma_logins:
             print(f"User entered: {rma_logins}")
-            text= logics.rma_assign(rma_logins)
+            text= logics.rma_assign(investr)
             formattedtext = text.split("|")
             parsed_list = ast.literal_eval(formattedtext[1])
             formatted_second_part = "\n".join(parsed_list)
             print(text)
             self.ui.rma_assign_csv.setText(f"Total Login = {formattedtext[0]} \n Login  :  Case Count  : Hours assigned \n {formatted_second_part} ")
+            #self.ui.rma_assign_csv.setText(text)
         else:
             print("User cancelled or didn't enter text.")
 
