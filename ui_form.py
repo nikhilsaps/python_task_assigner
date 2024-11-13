@@ -16,7 +16,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QGroupBox, QHBoxLayout, QLabel,
-    QPushButton, QSizePolicy, QVBoxLayout, QWidget)
+    QPushButton, QSizePolicy, QTextEdit, QVBoxLayout,
+    QWidget)
 
 class Ui_Widget(object):
     def setupUi(self, Widget):
@@ -105,6 +106,33 @@ class Ui_Widget(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout)
 
+        self.t_2_logins = QTextEdit(Widget)
+        self.t_2_logins.setObjectName(u"t_2_logins")
+        self.t_2_logins.setGeometry(QRect(20, 480, 231, 41))
+        self.t_1_logins = QTextEdit(Widget)
+        self.t_1_logins.setObjectName(u"t_1_logins")
+        self.t_1_logins.setGeometry(QRect(20, 550, 231, 41))
+        self.present_logins = QTextEdit(Widget)
+        self.present_logins.setObjectName(u"present_logins")
+        self.present_logins.setGeometry(QRect(20, 620, 241, 71))
+        self.label_2 = QLabel(Widget)
+        self.label_2.setObjectName(u"label_2")
+        self.label_2.setGeometry(QRect(20, 460, 91, 16))
+        self.label_3 = QLabel(Widget)
+        self.label_3.setObjectName(u"label_3")
+        self.label_3.setGeometry(QRect(20, 530, 91, 16))
+        self.label_4 = QLabel(Widget)
+        self.label_4.setObjectName(u"label_4")
+        self.label_4.setGeometry(QRect(20, 600, 91, 16))
+        self.eligible_logins = QTextEdit(Widget)
+        self.eligible_logins.setObjectName(u"eligible_logins")
+        self.eligible_logins.setGeometry(QRect(330, 510, 251, 91))
+        self.label_5 = QLabel(Widget)
+        self.label_5.setObjectName(u"label_5")
+        self.label_5.setGeometry(QRect(330, 480, 49, 16))
+        self.gen_logins = QPushButton(Widget)
+        self.gen_logins.setObjectName(u"gen_logins")
+        self.gen_logins.setGeometry(QRect(330, 630, 80, 24))
 
         self.retranslateUi(Widget)
 
@@ -129,5 +157,10 @@ class Ui_Widget(object):
         self.almond_assign_csv.setText(QCoreApplication.translate("Widget", u"Almond Assign Data", None))
         self.load_almond_csv.setText(QCoreApplication.translate("Widget", u"Load CSV", None))
         self.assign_almond_csv.setText(QCoreApplication.translate("Widget", u"Almond Assign", None))
+        self.label_2.setText(QCoreApplication.translate("Widget", u"T minus 2 ", None))
+        self.label_3.setText(QCoreApplication.translate("Widget", u"T minus 1", None))
+        self.label_4.setText(QCoreApplication.translate("Widget", u"Present", None))
+        self.label_5.setText(QCoreApplication.translate("Widget", u"Eligible", None))
+        self.gen_logins.setText(QCoreApplication.translate("Widget", u"generate", None))
     # retranslateUi
 

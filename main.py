@@ -1,5 +1,6 @@
 import sys
 import logics
+import re
 import ast
 from PySide6.QtWidgets import QApplication, QWidget,QFileDialog,QInputDialog
 from ui_form import Ui_Widget
@@ -14,6 +15,8 @@ class Widget(QWidget):
         self.ui.load_rma_csv.clicked.connect(self.rma_csv_fun)
         self.ui.assign_cap_csv.clicked.connect(self.assign_cap_logins)
         self.ui.assign_rma_csv.clicked.connect(self.assign_rma_logins)
+        self.ui.gen_logins.clicked.connect(self.find_eligible_logins)
+
     prepd_file = "Prepared CSV file is saved in prepd Folder"
 
     def cap_csv_fun(self):
@@ -73,6 +76,9 @@ class Widget(QWidget):
             #self.ui.rma_assign_csv.setText(text)
         else:
             print("User cancelled or didn't enter text.")
+
+    def find_eligible_logins():
+        pass
 
 
 
