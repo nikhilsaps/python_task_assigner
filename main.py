@@ -77,8 +77,19 @@ class Widget(QWidget):
         else:
             print("User cancelled or didn't enter text.")
 
-    def find_eligible_logins():
-        pass
+    def find_eligible_logins(self):
+        l=[]
+        t_1l=re.split(r'[,\s/]+',self.ui.t_1_logins.toPlainText())
+        t_2l=re.split(r'[,\s/]+',self.ui.t_2_logins.toPlainText())
+        present_logins= re.split(r'[,\s/]+',self.ui.present_logins.toPlainText())
+    
+        for x in present_logins :
+            if x not in t_1l  and x not in t_2l:
+                l.append(x)
+
+        self.ui.eligible_logins.setText((",").join(l))
+            
+        
 
 
 
