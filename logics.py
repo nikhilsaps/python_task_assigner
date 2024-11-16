@@ -30,7 +30,7 @@ def cap_prep(capfile):
     return f"{original_count}:{remove_dup_count}:{prepd_cap_count}"
 
 def rma_prep(rmafile):
-    rma_dataframe= pd.read_csv(rmafile)
+    rma_dataframe= pd.read_csv(rmafile, sep='\t', skiprows=0)
     original_countr= len(rma_dataframe)
     rma_dataframe.drop_duplicates(subset=['customer_id','annos'],keep='first',inplace=True)
     remove_dup_countr =len(rma_dataframe)
@@ -44,99 +44,97 @@ def rma_prep(rmafile):
 import pandas as pd
 
 def cap_assign(agent_list):
-    # Read the CSV file
+    
     df = pd.read_csv('prepd/prepared_cap.csv')
     
-    # Initialize columns for agents and unique annos tracking
+   
     df['login'] = np.nan
     
-    # Get the total number of tasks and agents
+    
     num_tasks = len(df)
     num_agents = len(agent_list)
     
-    # Calculate the maximum and minimum number of tasks each agent can receive
+    
     tasks_per_agent = num_tasks // num_agents
     remainder = num_tasks % num_agents
     
-    # Create a list of agents with nearly equal task distribution
+    
     agent_task_list = agent_list * tasks_per_agent
     agent_task_list += agent_list[:remainder]
     
-    # Shuffle the agent list for random distribution (optional)
+    
     np.random.shuffle(agent_task_list)
     
-    # Add the tasks to each agent
+    
     df['login'] = agent_task_list
 
-    # Now distribute the 'annos' values equally
-    # Group by 'annos' to count how many unique annos each agent is assigned
+    
     anno_counts = Counter(df['MOTT'])
     anno_per_agent = {agent: [] for agent in agent_list}
 
-    # Distribute unique annos to agents while trying to balance the unique count
+    
     sorted_annos = sorted(anno_counts.items(), key=lambda x: x[1], reverse=True)
     for anno, count in sorted_annos:
-        # Find the agent with the least unique annos and assign this anno to them
+        
         agent_with_fewest = min(anno_per_agent, key=lambda agent: len(set(anno_per_agent[agent])))
         anno_per_agent[agent_with_fewest].append(anno)
 
-    # Update the dataframe with the unique annos for each agent
+    
     for agent in agent_list:
         anno_assigned = set(anno_per_agent[agent])
         df.loc[df['login'] == agent, 'Assigned MOTT'] = ", ".join(anno_assigned)
     columns = ['login'] + [col for col in df.columns if col != 'login']
     df = df[columns]
     
-    # Save the updated dataframe to a new CSV or return it
+    
     df.to_excel('./assigned/assigned_CAP_tasks.xlsx', index=False)
     
     return f"{len(agent_list)}|{[f"{x}  :  {len(df.loc[df['login']==x])}  :  {round(len(df.loc[df['login']==x])/23,2)} hours" for x in agent_list]}"
 
 
 def rma_assign(agent_list):
-    # Read the CSV file
+    
     df = pd.read_csv('prepd/prepared_rma.csv')
     
-    # Initialize columns for agents and unique annos tracking
+    
     df['login'] = np.nan
     
-    # Get the total number of tasks and agents
+    
     num_tasks = len(df)
     num_agents = len(agent_list)
     
-    # Calculate the maximum and minimum number of tasks each agent can receive
+    
     tasks_per_agent = num_tasks // num_agents
     remainder = num_tasks % num_agents
     
-    # Create a list of agents with nearly equal task distribution
+    
     agent_task_list = agent_list * tasks_per_agent
     agent_task_list += agent_list[:remainder]
     
-    # Shuffle the agent list for random distribution (optional)
+    
     np.random.shuffle(agent_task_list)
     
-    # Add the tasks to each agent
+    
     df['login'] = agent_task_list
 
-    # Now distribute the 'annos' values equally
-    # Group by 'annos' to count how many unique annos each agent is assigned
+    
     anno_counts = Counter(df['annos'])
     anno_per_agent = {agent: [] for agent in agent_list}
 
-    # Distribute unique annos to agents while trying to balance the unique count
+    
     sorted_annos = sorted(anno_counts.items(), key=lambda x: x[1], reverse=True)
     for anno, count in sorted_annos:
-        # Find the agent with the least unique annos and assign this anno to them
+        
         agent_with_fewest = min(anno_per_agent, key=lambda agent: len(set(anno_per_agent[agent])))
         anno_per_agent[agent_with_fewest].append(anno)
 
-    # Update the dataframe with the unique annos for each agent
+    
     for agent in agent_list:
         anno_assigned = set(anno_per_agent[agent])
         df.loc[df['login'] == agent, 'Assigned Annos'] = ", ".join(anno_assigned)
     columns = ['login'] + [col for col in df.columns if col != 'login']
     df = df[columns]
-    # Save the updated dataframe to a new CSV or return it
+   
     df.to_excel('./assigned/assigned_RMA_tasks.xlsx', index=False)
     
     return f"{len(agent_list)}|{[f"{x}  :  {len(df.loc[df['login']==x])}  :  {round(len(df.loc[df['login']==x])/23,2)} hours" for x in agent_list]}"

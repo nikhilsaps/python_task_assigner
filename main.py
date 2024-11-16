@@ -36,7 +36,7 @@ class Widget(QWidget):
     def rma_csv_fun(self):
         file_dialog = QFileDialog(self)
         file_dialog.setFileMode(QFileDialog.ExistingFile) 
-        file_dialog.setNameFilter("Text files (*.csv);;All files (*)")
+        file_dialog.setNameFilter("Text files (*.txt);;All files (*)")
         file_dialog.setViewMode(QFileDialog.List)
         if file_dialog.exec():
             selected_file = file_dialog.selectedFiles()[0]
